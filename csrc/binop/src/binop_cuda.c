@@ -45,7 +45,7 @@ void im2col(THCudaTensor* data_im, int channels,
 void encode_rows(THCudaTensor* input, THCudaIntTensor* output) {
     //THCUNN_assertSameGPU(state, 2, input, output);
 
-	int m = input->size[0];
+    int m = input->size[0];
     int n = input->size[1];
     int l = 1+(n-1)/ENCODE_BITS;
 
