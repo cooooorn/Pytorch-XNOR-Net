@@ -68,5 +68,5 @@ python3 main.py --arch VGG16 --evaluate --pratrain ./model/VGG16.best.pth
 * https://github.com/jiecaoyu/XNOR-Net-PyTorch
 * [cpu-gemm](http://apfel.mathematik.uni-ulm.de/~lehn/sghpc/gemm/page02/index.html)
 * [cpu-conv2d](https://github.com/pytorch/pytorch/blob/f23feca681c5066c70f0fe1516fc2e269d615e93/aten/src/THNN/generic/SpatialConvolutionMM.c)
-* [gpu-gemm](https://github.com/1adrianb/bnn.torch/blob/master/BinarySpatialConvolution.cu)
+* [gpu-gemm and gpu-conv2d](https://github.com/1adrianb/bnn.torch/blob/master/BinarySpatialConvolution.cu)
 * [popcount](https://github.com/kimwalisch/libpopcnt)
