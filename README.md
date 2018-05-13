@@ -51,7 +51,7 @@ python3 main.py --arch VGG16 --evaluate --pretrain ./model/VGG16.best.pth
 
 # Environment
 ## Software
-
+* Ubuntu  16.04
 * Python  3.5
 * Pytorch 0.3.1
 * CUDA    8.0
