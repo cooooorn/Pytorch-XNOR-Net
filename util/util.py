@@ -196,7 +196,7 @@ class binop_train:
             # save param
             self.saved_params[index].copy_(self.target_modules[index].data)
 
-            # get alpha, binarize weight and mutiply alpha
+            # get alpha, binarize weight and multiply alpha
             if len(s) == 4:
                 self.alpha_to_save[index].data = \
                     self.target_modules[index].data.norm(1, 3, keepdim=True).sum(2, keepdim=True).sum(1,
