@@ -17,6 +17,7 @@ cd <Repository Root>/MNIST/
 python3 main.py --arch Bin_LeNet --evaluate --pratrain ./model/Bin_LeNet.best.pth
 python3 main.py --arch LeNet --evaluate --pratrain ./model/LeNet.best.pth
 ~~~
+## Result
 |  Network  | Accuracy |  SIZE   |
 |  -------  | -------- |  ----   |
 |   LeNet   |  99.50%  |  1.7 MB |
@@ -38,6 +39,7 @@ cd <Repository Root>/Cifar10/
 python3 main.py --arch Bin_VGG16 --evaluate --pratrain ./model/Bin_VGG16.best.pth
 python3 main.py --arch VGG16 --evaluate --pratrain ./model/VGG16.best.pth
 ~~~
+## Result
 |  Network  | Accuracy |  SIZE    |
 |  -------  | -------- |  ----    |
 |   VGG13   |  92.40%  |  37.7 MB |
