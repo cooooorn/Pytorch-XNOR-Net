@@ -60,3 +60,13 @@ python3 main.py --arch VGG16 --evaluate --pratrain ./model/VGG16.best.pth
 
 * NVIDIA GTX 1080
 * Intel  i5-6500 CPU @ 3.20GHz × 4
+
+
+# Reference
+* [Binarized Neural Networks: Training Deep Neural Networks with Weights and Activations Constrained to +1 or -1](https://arxiv.org/pdf/1602.02830.pdf)
+* [XNOR-Net: ImageNet Classification Using Binary Convolutional Neural Networks](https://arxiv.org/pdf/1603.05279.pdf)
+* https://github.com/jiecaoyu/XNOR-Net-PyTorch
+* [cpu-gemm](http://apfel.mathematik.uni-ulm.de/~lehn/sghpc/gemm/page02/index.html)
+* [cpu-conv2d](https://github.com/pytorch/pytorch/blob/f23feca681c5066c70f0fe1516fc2e269d615e93/aten/src/THNN/generic/SpatialConvolutionMM.c)
+* [gpu-gemm](https://github.com/1adrianb/bnn.torch/blob/master/BinarySpatialConvolution.cu)
+* [popcount](https://github.com/kimwalisch/libpopcnt)
