@@ -14,8 +14,8 @@ python3 main.py --arch LeNet
 ### Evaluate:
 ~~~shell
 cd <Repository Root>/MNIST/
-python3 main.py --arch Bin_LeNet --evaluate --pratrain ./model/Bin_LeNet.best.pth
-python3 main.py --arch LeNet --evaluate --pratrain ./model/LeNet.best.pth
+python3 main.py --arch Bin_LeNet --evaluate --pretrain ./model/Bin_LeNet.best.pth
+python3 main.py --arch LeNet --evaluate --pretrain ./model/LeNet.best.pth
 ~~~
 ## Result
 |  Network  | Accuracy |  SIZE   |
@@ -36,8 +36,8 @@ python3 main.py --arch VGG16 #(11, 13, 16, 19)
 ### Evaluate:
 ~~~shell
 cd <Repository Root>/Cifar10/
-python3 main.py --arch Bin_VGG16 --evaluate --pratrain ./model/Bin_VGG16.best.pth
-python3 main.py --arch VGG16 --evaluate --pratrain ./model/VGG16.best.pth
+python3 main.py --arch Bin_VGG16 --evaluate --pretrain ./model/Bin_VGG16.best.pth
+python3 main.py --arch VGG16 --evaluate --pretrain ./model/VGG16.best.pth
 ~~~
 ## Result
 |  Network  | Accuracy |  SIZE    |
