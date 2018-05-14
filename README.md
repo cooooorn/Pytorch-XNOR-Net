@@ -13,8 +13,8 @@ python3 main.py --arch LeNet
 ### Evaluate:
 ~~~shell
 cd <Repository Root>/MNIST/
-python3 main.py --arch Bin_LeNet --evaluate --pretrain ./models/Bin_LeNet.best.pth
-python3 main.py --arch LeNet --evaluate --pretrain ./models/LeNet.best.pth
+python3 main.py --arch Bin_LeNet --evaluate --pretrain ./models/Bin_LeNet.best.pth # --no_cuda (Use CPU)
+python3 main.py --arch LeNet --evaluate --pretrain ./models/LeNet.best.pth # --no_cuda (Use CPU)
 ~~~
 ## Result
 |  Network  | Accuracy |  SIZE   |
@@ -35,8 +35,8 @@ python3 main.py --arch VGG16 #(11, 13, 16, 19)
 ### Evaluate:
 ~~~shell
 cd <Repository Root>/Cifar10/
-python3 main.py --arch Bin_VGG16 --evaluate --pretrain ./models/Bin_VGG16.best.pth
-python3 main.py --arch VGG16 --evaluate --pretrain ./models/VGG16.best.pth
+python3 main.py --arch Bin_VGG16 --evaluate --pretrain ./models/Bin_VGG16.best.pth # --no_cuda (Use CPU)
+python3 main.py --arch VGG16 --evaluate --pretrain ./models/VGG16.best.pth # --no_cuda (Use CPU)
 ~~~
 ## Result
 |  Network  | Accuracy |  SIZE    |
