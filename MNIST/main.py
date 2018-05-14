@@ -284,8 +284,8 @@ if __name__ == '__main__':
         model_train = models.Bin_LeNet_train()
         model_test = models.Bin_LeNet_test()
         if args.cuda:
-            model_train = models.Bin_LeNet_train().cuda()
-            model_test = models.Bin_LeNet_test().cuda()
+            model_train = model_train.cuda()
+            model_test = model_test.cuda()
 
         if args.pretrained:
             model_test.load_state_dict(torch.load(args.pretrained))
