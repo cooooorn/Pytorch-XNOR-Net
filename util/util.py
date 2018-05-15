@@ -34,49 +34,29 @@ def bin_save_state(args, model):
     torch.save(state, 'models/' + args.arch + '.pth')
 
 
-def bin_conv2d_cpu(input, weight, bias, alpha, kernel_size, stride, padding):
-    output = Variable(torch.FloatTensor(), requires_grad=False)
-    columns = torch.FloatTensor()
+def bin_conv2d(input, weight, bias, alpha, kernel_size, stride, padding):
+    out_tensor = torch.FloatTensor()
+    col_tensor = torch.FloatTensor()
+    use_cuda = input.is_cuda
+    if use_cuda:
+        out_tensor = out_tensor.cuda()
+        col_tensor = col_tensor.cuda()
+    output = Variable(out_tensor, requires_grad=False)
     if bias is None:
-        binop.THNN_Bin_SpatialConvolutionMM_updateOutput(
-            input.data, output.data, weight.data, torch.FloatTensor(), columns, alpha.data,
-            kernel_size[0], kernel_size[1], stride[0], stride[1], padding[0], padding[1]
+        if use_cuda:
+            bias = Variable(torch.cuda.FloatTensor(), requires_grad=False)
+        else:
+            bias = Variable(torch.FloatTensor(), requires_grad=False)
+    if use_cuda:
+        binop.BinarySpatialConvolution_updateOutput(
+            input.data, output.data, weight.data, col_tensor, bias.data, alpha.data,
+            input.data.shape[1], kernel_size[0], kernel_size[1], stride[0], stride[1], padding[0], padding[1]
         )
     else:
         binop.THNN_Bin_SpatialConvolutionMM_updateOutput(
-            input.data, output.data, weight.data, bias.data, columns, alpha.data,
+            input.data, output.data, weight.data, bias.data, col_tensor, alpha.data,
             kernel_size[0], kernel_size[1], stride[0], stride[1], padding[0], padding[1]
         )
-    return output
-
-
-def bin_conv2d(input, weight, bias, alpha, kernel_size, stride, padding, in_channels):
-    output = Variable(torch.cuda.FloatTensor(), requires_grad=False)
-    columns = torch.cuda.FloatTensor()
-    if bias is None:
-        binop.BinarySpatialConvolution_updateOutput(
-            input.data, output.data, weight.data, columns, torch.cuda.FloatTensor(), alpha.data,
-            in_channels, kernel_size[0], kernel_size[1], stride[0], stride[1], padding[0], padding[1]
-        )
-    else:
-        binop.BinarySpatialConvolution_updateOutput(
-            input.data, output.data, weight.data, columns, bias.data, alpha.data,
-            in_channels, kernel_size[0], kernel_size[1], stride[0], stride[1], padding[0], padding[1]
-        )
-    return output
-
-
-def bin_linear_cpu(input, weight, bias, alpha):
-    m = input.data.shape[0]
-    n = input.data.shape[1]
-    k = weight.data.shape[0]
-    bin_input = torch.IntTensor(m, 1 + (n - 1) // 32)
-    output = Variable(torch.FloatTensor(m, k), requires_grad=False)
-    binop.encode_rows_cpu(input.data, bin_input)
-    binop.binary_gemm_cpu(bin_input, weight.data, output.data, m, n, k, 1, 0, 0, alpha.data)
-    output.data.mul_(alpha.data.t().expand(output.shape))
-    if bias is not None:
-        output.data.add_(bias.data.expand(output.shape))
     return output
 
 
@@ -84,10 +64,21 @@ def bin_linear(input, weight, bias, alpha):
     m = input.data.shape[0]
     n = input.data.shape[1]
     k = weight.data.shape[0]
-    bin_input = torch.cuda.IntTensor(m, 1 + (n - 1) // 32)
-    output = Variable(torch.cuda.FloatTensor(m, k), requires_grad=False)
-    binop.encode_rows(input.data, bin_input)
-    binop.binary_gemm(bin_input, weight.data, output.data, m, n, k, 1, 0, 0, alpha.data)
+    out_tensor = torch.FloatTensor()
+    bin_input = torch.IntTensor()
+    use_cuda = input.is_cuda
+
+    if use_cuda:
+        bin_input = bin_input.cuda()
+        out_tensor = out_tensor.cuda()
+
+    output = Variable(out_tensor, requires_grad=False)
+    if use_cuda:
+        binop.encode_rows(input.data, bin_input)
+        binop.binary_gemm(bin_input, weight.data, output.data, m, n, k, 1, 0, 0, alpha.data)
+    else:
+        binop.encode_rows_cpu(input.data, bin_input)
+        binop.binary_gemm_cpu(bin_input, weight.data, output.data, m, n, k, 1, 0, 0, alpha.data)
     output.data.mul_(alpha.data.t().expand(output.shape))
     if bias is not None:
         output.data.add_(bias.data.expand(output.shape))
@@ -132,12 +123,7 @@ class BinConv2d(nn.Conv2d):
                 input = self.drop(input)
             input = F.conv2d(input, weight=self.weight, bias=self.bias, stride=self.stride, padding=self.padding)
         else:
-            if input.is_cuda:
-                input = bin_conv2d(input, self.weight, self.bias, self.alpha, self.kernel_size, self.stride,
-                                   self.padding, self.in_channels)
-            else:
-                input = bin_conv2d_cpu(input, self.weight, self.bias, self.alpha, self.kernel_size, self.stride,
-                                       self.padding)
+            input = bin_conv2d(input, self.weight, self.bias, self.alpha, self.kernel_size, self.stride, self.padding)
         return input
 
 
@@ -162,10 +148,7 @@ class BinLinear(nn.Linear):
                 input = self.drop(input)
             input = F.linear(input, weight=self.weight, bias=self.bias)
         else:
-            if input.is_cuda:
-                input = bin_linear(input, weight=self.weight, bias=self.bias, alpha=self.alpha)
-            else:
-                input = bin_linear_cpu(input, weight=self.weight, bias=self.bias, alpha=self.alpha)
+            input = bin_linear(input, weight=self.weight, bias=self.bias, alpha=self.alpha)
         return input
 
 
@@ -196,7 +179,7 @@ class binop_train:
             # save param
             self.saved_params[index].copy_(self.target_modules[index].data)
 
-            # get alpha, binarize weight and multiply alpha
+            # get alpha, binarize weight and mutiply alpha
             if len(s) == 4:
                 self.alpha_to_save[index].data = \
                     self.target_modules[index].data.norm(1, 3, keepdim=True).sum(2, keepdim=True).sum(1,
