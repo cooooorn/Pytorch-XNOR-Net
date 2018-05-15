@@ -47,9 +47,7 @@ void encode_rows_cpu(THFloatTensor* input, THIntTensor* output) {
     int n = input->size[1];
     int l = 1+(n-1)/ENCODE_BIT;
 
-    if (output->nDimension != 2 || output->size[0]*output->size[1] < m*l) {
-        THIntTensor_resize2d(output, m, l);
-    }
+    THIntTensor_resize2d(output, m, l);
     float* a = THFloatTensor_data(input);
     uint32_t* b = (uint32_t*)THIntTensor_data(output);
 
@@ -60,11 +58,9 @@ void encode_cols_cpu(THFloatTensor* input, THIntTensor* output) {
     int n = input->size[0];
     int k = input->size[1];
     int l = 1+(n-1)/ENCODE_BIT;
-    if (output->nDimension != 2 || output->size[0]*output->size[1] < l*k) {
-        THIntTensor_resize2d(output, l, k);
-    }
-    float* a = THFloatTensor_data(input);
 
+    THIntTensor_resize2d(output, l, k);
+    float* a = THFloatTensor_data(input);
     uint32_t* b = (uint32_t*)THIntTensor_data(output);
 
     encode_cols_cpu_kernel(a, b, n, k);
