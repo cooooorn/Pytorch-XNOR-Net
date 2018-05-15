@@ -26,7 +26,7 @@ ffi = create_extension(
     with_cuda=with_cuda,
     extra_objects=extra_objects,
     include_dirs=[osp.join(abs_path, 'include')],
-    extra_compile_args=["-std=c99", "-O3", "-fopenmp", "-mtune=native", "-march=x86-64"]
+    extra_compile_args=["-std=c99", "-Ofast", "-fopenmp", "-mtune=native", "-march=x86-64"]
 )
 
 if __name__ == '__main__':
