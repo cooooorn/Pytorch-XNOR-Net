@@ -45,13 +45,11 @@ void im2col(THCudaTensor* data_im, int channels,
 void encode_rows(THCudaTensor* input, THCudaIntTensor* output) {
     //THCUNN_assertSameGPU(state, 2, input, output);
 
-    int m = input->size[0];
+	int m = input->size[0];
     int n = input->size[1];
     int l = 1+(n-1)/ENCODE_BITS;
 
-    if (output->nDimension != 2 || output->size[0]*output->size[1] < m*l) {
-        THCudaIntTensor_resize2d(state, output, m, l);
-    }
+    THCudaIntTensor_resize2d(state, output, m, l);
     float* a = THCudaTensor_data(state, input);
     uint32_t* b = (uint32_t*)THCudaIntTensor_data(state, output);
     cudaStream_t stream = THCState_getCurrentStream(state);
@@ -65,11 +63,9 @@ void encode_cols(THCudaTensor* input, THCudaIntTensor* output) {
     int n = input->size[0];
     int k = input->size[1];
     int l = 1+(n-1)/ENCODE_BITS;
-    if (output->nDimension != 2 || output->size[0]*output->size[1] < l*k) {
-        THCudaIntTensor_resize2d(state, output, l, k);
-    }
-    float* a = THCudaTensor_data(state, input);
 
+    THCudaIntTensor_resize2d(state, output, l, k);
+    float* a = THCudaTensor_data(state, input);
     uint32_t* b = (uint32_t*)THCudaIntTensor_data(state, output);
     cudaStream_t stream = THCState_getCurrentStream(state);
 
