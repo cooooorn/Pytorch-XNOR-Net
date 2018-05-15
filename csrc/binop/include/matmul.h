@@ -17,7 +17,7 @@ const uint32_t UBIT = ~0;
 //
 static uint32_t _A[MC*KC];
 static uint32_t _B[KC*NC];
-static float _C[MR*NR];
+
 static inline uint32_t popcnt32(uint32_t x)
 {
   __asm__ ("popcnt %1, %0" : "=r" (x) : "0" (x));
@@ -107,14 +107,14 @@ pack_B(int kc, int nc, uint32_t *B, int incRowB, int incColB, uint32_t *buffer){
     }
 }
 
+
 //
 //  Micro kernel for multiplying panels from A and B.
 //
 static void
-dgemm_micro_kernel(int kc, uint32_t *A, uint32_t *B, int beta, float *C, int incRowC, int incColC)
+dgemm_micro_kernel(int m, int n, int kc, uint32_t *A, uint32_t *B, int beta, float *C, int incRowC, int incColC)
 {
     int AB[MR*NR];
-
     int i, j, l;
 
 //
@@ -126,13 +126,11 @@ dgemm_micro_kernel(int kc, uint32_t *A, uint32_t *B, int beta, float *C, int inc
     }
 
     for (l=0; l<kc; ++l) {
-
         for (j=0; j<NR; ++j) {
             for (i=0; i<MR; ++i) {
                 AB[i+j*MR] -= popcnt32(MASK(A[i]^B[j]))<<1;
             }
         }
-
         A += MR;
         B += NR;
     }
@@ -142,38 +140,16 @@ dgemm_micro_kernel(int kc, uint32_t *A, uint32_t *B, int beta, float *C, int inc
 //
     if (!beta) {
         //#pragma omp for collapse(2)
-        for (j=0; j<NR; ++j) {
-            for (i=0; i<MR; ++i) {
-                C[i*incRowC+j*incColC] = 0;
+        for (j=0; j<n; ++j) {
+            for (i=0; i<m; ++i) {
+                C[i*incRowC+j*incColC] += 0;
             }
         }
     }
     //#pragma omp for collapse(2)
-    for (j=0; j<NR; ++j) {
-        for (i=0; i<MR; ++i) {
-            C[i*incRowC+j*incColC] += AB[i+j*MR];
-        }
-    }
-}
-
-//
-//  Compute Y += alpha*X
-//
-static void
-dgeaxpy(int           m,
-        int           n,
-        float        *X,
-        int           incRowX,
-        int           incColX,
-        float        *Y,
-        int           incRowY,
-        int           incColY)
-{
-    int i, j;
-
     for (j=0; j<n; ++j) {
         for (i=0; i<m; ++i) {
-            Y[i*incRowY+j*incColY] += X[i*incRowX+j*incColX];
+            C[i*incRowC+j*incColC] += AB[i+j*MR];
         }
     }
 }
@@ -209,7 +185,7 @@ static void
 dgemm_macro_kernel(int     mc,
                    int     nc,
                    int     kc,
-                   int  beta,
+                   int     beta,
                    float  *C,
                    int     incRowC,
                    int     incColC)
@@ -222,26 +198,25 @@ dgemm_macro_kernel(int     mc,
 
     int mr, nr;
     int i, j;
+    #pragma omp parallel shared(C) private(i,j,nr,mr)
+    {
+        #pragma omp for schedule(dynamic)
+        for (j=0; j<np; ++j) {
+            nr    = (j!=np-1 || _nr==0) ? NR : _nr;
+            for (i=0; i<mp; ++i) {
+                mr    = (i!=mp-1 || _mr==0) ? MR : _mr;
 
-    for (j=0; j<np; ++j) {
-        nr    = (j!=np-1 || _nr==0) ? NR : _nr;
+                if (mr==MR && nr==NR) {
 
-        for (i=0; i<mp; ++i) {
-            mr    = (i!=mp-1 || _mr==0) ? MR : _mr;
+                    dgemm_micro_kernel(mr, nr, kc, &_A[i*kc*MR], &_B[j*kc*NR], beta, &C[i*MR*incRowC+j*NR*incColC], incRowC, incColC);
 
-            if (mr==MR && nr==NR) {
-                dgemm_micro_kernel(kc, &_A[i*kc*MR], &_B[j*kc*NR],
-                                   beta,
-                                   &C[i*MR*incRowC+j*NR*incColC],
-                                   incRowC, incColC);
-            } else {
-                dgemm_micro_kernel(kc, &_A[i*kc*MR], &_B[j*kc*NR],
-                                   0,
-                                   _C, 1, MR);
-                dgescal(mr, nr, beta,
-                        &C[i*MR*incRowC+j*NR*incColC], incRowC, incColC);
-                dgeaxpy(mr, nr, _C, 1, MR,
-                        &C[i*MR*incRowC+j*NR*incColC], incRowC, incColC);
+                } else {
+
+                    dgescal(mr, nr, beta, &C[i*MR*incRowC+j*NR*incColC], incRowC, incColC);
+
+                    dgemm_micro_kernel(mr, nr, kc, &_A[i*kc*MR], &_B[j*kc*NR], 0, &C[i*MR*incRowC+j*NR*incColC], incRowC, incColC);
+
+                }
             }
         }
     }
@@ -304,6 +279,7 @@ dgemm_nn(int            m,
             }
         }
     }
+
     //#pragma omp parallel for schedule(dynamic,1) collapse(2)
     for(i=0; i<m; i++){
         for(j=0; j<n; j++){
