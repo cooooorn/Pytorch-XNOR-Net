@@ -44,7 +44,7 @@ python3 main.py --arch VGG16 --evaluate --pretrain ./models/VGG16.best.pth # --n
 |   VGG13   |  92.40%  |  37.7 MB |
 | Bin_VGG13 |  85.20%  |  1.3  MB |
 |   VGG16   |  92.29%  |  59.0 MB |
-| Bin_VGG16 |  85.16%  |  2.0  MB |
+| Bin_VGG16 |  87.78%  |  2.0  MB |
 
 # Pre-trained models
 [Google Drive](https://drive.google.com/open?id=13KAF89w1-OnGTgHlhblnzBafpz-sTCVT)
