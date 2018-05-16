@@ -171,16 +171,19 @@ void BinarySpatialConvolution_updateOutput(
         binary_gemm(weight, columns_binary, output_n, m, nInputPlane*kW*kH, k, 0, 1, 1, alphas);
     }
 
-    // Free
-    THCudaTensor_free(state, input_n);
-    THCudaTensor_free(state, output_n);
-    
     if (batch==0) {
         THCudaTensor_resize3d(state, output, nOutputPlane, outputHeight, outputWidth);
         THCudaTensor_resize3d(state, input, nInputPlane, inputHeight, inputWidth);
     }
 
-    THCudaTensor_free(state,input);
+    // Free
+    THCudaTensor_free(state, input_n);
+    THCudaTensor_free(state, output_n);
+    THCudaTensor_free(state, ones);
+
+    THCudaTensor_free(state, input);
+    THCudaTensor_free(state, columns);
+    THCudaIntTensor_free(state, columns_binary);
 }
 
 
