@@ -42,7 +42,7 @@ python3 main.py --arch VGG16 --evaluate --pretrain ./models/VGG16.best.pth # --n
 |  Network  | Accuracy |  SIZE    |
 |  -------  | -------- |  ----    |
 |   VGG13   |  92.40%  |  37.7 MB |
-| Bin_VGG13 |  85.20%  |  1.3  MB |
+| Bin_VGG13 |  88.46%  |  1.3  MB |
 |   VGG16   |  92.29%  |  59.0 MB |
 | Bin_VGG16 |  87.78%  |  2.0  MB |
 
