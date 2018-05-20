@@ -14,7 +14,6 @@ from tqdm import tqdm
 tqdm.monitor_interval = 0
 from sklearn.metrics import classification_report
 from sklearn.metrics import confusion_matrix
-import vgg
 import models as models
 sys.path.append('../')
 import binop
@@ -51,7 +50,7 @@ def plot_confusion_matrix(cm, classes, normalize=False,
         cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
         print("Normalized confusion matrix")
     else:
-        print('Confusion matrix, without normalization')
+        print('Confusion matrix')
 
     print(cm)
 
@@ -80,7 +79,7 @@ def eval_test(y_pred, y_true):
     # Plot non-normalized confusion matrix
     plt.figure()
     plot_confusion_matrix(cnf_matrix, classes=target_name,
-                          title='Confusion matrix, without normalization')
+                          title='Confusion matrix')
 
     # Plot normalized confusion matrix
     plt.figure()
@@ -91,9 +90,9 @@ def eval_test(y_pred, y_true):
     plt.show()
 
 
-def save_state(model):
+def save_state(model, mname=""):
     print('==> Saving model ...')
-    torch.save(model.state_dict(), 'models/' + args.arch + '.pth')
+    torch.save(model.state_dict(), 'models/' + args.arch + mname +'.pth')
 
 def train_bin(epoch):
     running_loss = RunningMean()
@@ -154,37 +153,37 @@ def train(epoch):
         epoch, running_loss.value, running_score.value))
     save_state(model_ori)
 
-def test_train(model):
-    test_loss = 0
-    correct = 0
-    model.eval()
-    binop_train.binarization()
-    pbar = tqdm(test_loader, total=len(test_loader))
-    for data, target in pbar:
-        if args.cuda:
-            data, target = data.cuda(), target.cuda()
-        data, target = Variable(data), Variable(target)
-        output = model(data)
-        test_loss += criterion(output, target).data[0]
-        pred = output.data.max(1, keepdim=False)[1]
-        correct += pred.eq(target.data).cpu().sum()
-    acc = 100. * correct / len(test_loader.dataset)
-    test_loss /= len(test_loader.dataset)
-    print('\nTrain Test set: Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%)'.format(
-        test_loss * args.batch_size, correct, len(test_loader.dataset),
-        100. * correct / len(test_loader.dataset)))
-    print('Best Accuracy: {:.2f}%\n'.format(best_acc))
-    binop_train.restore()
+# def test_train(model):
+#     test_loss = 0
+#     correct = 0
+#     model.eval()
+#     binop_train.binarization()
+#     pbar = tqdm(test_loader, total=len(test_loader))
+#     for data, target in pbar:
+#         if args.cuda:
+#             data, target = data.cuda(), target.cuda()
+#         data, target = Variable(data), Variable(target)
+#         output = model(data)
+#         test_loss += criterion(output, target).data[0]
+#         pred = output.data.max(1, keepdim=False)[1]
+#         correct += pred.eq(target.data).cpu().sum()
+#     acc = 100. * correct / len(test_loader.dataset)
+#     test_loss /= len(test_loader.dataset)
+#     print('\nTrain Test set: Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%)'.format(
+#         test_loss * args.batch_size, correct, len(test_loader.dataset),
+#         100. * correct / len(test_loader.dataset)))
+#     print('Best Accuracy: {:.2f}%\n'.format(best_acc))
+#     binop_train.restore()
 
 def test(model, evaluate=False):
     global best_acc
     test_loss = 0
     correct = 0
+    model.eval()
     if evaluate:
         model.load_state_dict(torch.load(args.pretrained))
     else:
         model.load_state_dict(torch.load('models/' + args.arch + '.pth'))
-    model.eval()
     pbar = tqdm(test_loader, total=len(test_loader))
     if evaluate:
         pred = torch.LongTensor()
@@ -217,6 +216,8 @@ def test(model, evaluate=False):
         if (acc > best_acc):
             best_acc = acc
             os.rename('models/' + args.arch + '.pth', 'models/' + args.arch + '.best.pth')
+            if model_train is not None:
+                save_state(model_train, "bak")
         else:
             os.remove('models/' + args.arch + '.pth')
         print('Best Accuracy: {:.2f}%\n'.format(best_acc))
@@ -227,12 +228,12 @@ def test(model, evaluate=False):
 
 def adjust_learning_rate(optimizer, epoch):
     """Sets the learning rate to the initial LR decayed by 10 every 15 epochs"""
-    update_list = [30, 100, 180, 260]
+    update_list = [150, 200, 250]
     if epoch in update_list:
         for param_group in optimizer.param_groups:
-            param_group['lr'] = param_group['lr'] * 0.5
-    #lr = args.lr * (0.5 ** (epoch // 50))
-    #for param_group in optimizer.param_groups:
+            param_group['lr'] = param_group['lr'] * 0.1
+    # lr = args.lr * (0.1 ** (epoch // 50))
+    # for param_group in optimizer.param_groups:
     #   param_group['lr'] = lr
     print('Learning Rate: {}'.format(optimizer.param_groups[0]['lr']))
 
@@ -249,7 +250,7 @@ if __name__ == '__main__':
                         help='number of epochs to train (default: 100)')
     parser.add_argument('--lr-epochs', type=int, default=100, metavar='N',
                         help='number of epochs to decay the lr (default: 20)')
-    parser.add_argument('--lr', type=float, default=0.01, metavar='LR',
+    parser.add_argument('--lr', type=float, default=0.1, metavar='LR',
                         help='learning rate (default: 0.01)')
     parser.add_argument('--weight-decay', '--wd', default=1e-5, type=float,
                         metavar='W', help='weight decay (default: 5e-4)')
@@ -273,10 +274,7 @@ if __name__ == '__main__':
     print(args)
     cnt = 0
     lr_cnt = 0
-    model_names = sorted(name for name in vgg.__dict__
-                         if name.islower() and not name.startswith("__")
-                         and name.startswith("vgg")
-                         and callable(vgg.__dict__[name]))
+
     if args.cuda:
         torch.cuda.manual_seed(args.seed)
     else:
@@ -308,24 +306,43 @@ if __name__ == '__main__':
     model_test = None
 
     # generate the model
-    if 'NIN' or 'VGG11' in args.arch or 'VGG13' in args.arch or 'VGG16' in args.arch or 'VGG19' in args.arch:
-        if 'Bin' in args.arch:
-            _, name = args.arch.split('_')
-            model_train = models.Bin_VGG_train(name)
-            model_test = models.Bin_VGG_test(name)
+    model_names = ['RESNET18','NIN', 'VGG11', 'VGG13', 'VGG16', 'VGG19']
+    args.arch = args.arch.upper()
+    if '_' in args.arch:
+        _, name = args.arch.split('_')
+    else:
+        name = args.arch
+
+    if name in model_names:
+        if 'BIN' in args.arch:
+            if 'VGG' in name:
+                model_train = models.Bin_VGG_train(name)
+                model_test = models.Bin_VGG_test(name)
+            elif 'NIN' in name:
+                model_train = models.Bin_NIN_train()
+                model_test = models.Bin_NIN_test()
+            elif 'RESNET18' in name:
+                pass
             if args.cuda:
                 model_train.cuda()
                 model_test.cuda()
-            #model_train = models.NIN_train().cuda()
-            #model_test = models.NIN_test().cuda()
 
             if args.pretrained:
-                model_test.load_state_dict(torch.load(args.pretrained))
+                if args.evaluate:
+                    model_test.load_state_dict(torch.load(args.pretrained))
+                else:
+                    model_train.load_state_dict(torch.load(args.pretrained))
+                    binop_train = binop_train(model_train)
             else:
                 binop_train = binop_train(model_train)
 
         else:
-            model_ori = models.VGG(args.arch)
+            if 'VGG' in name:
+                model_ori = models.VGG(name)
+            elif 'NIN' in name:
+                model_ori = models.NIN()
+            elif "RESNET18" in name:
+                pass
             if args.cuda:
                 model_ori.cuda()
 
@@ -344,14 +361,14 @@ if __name__ == '__main__':
             params += [{
                 'params': [value],
                 'lr': args.lr,
-                #'weight_decay': args.weight_decay,
                 'key': key
             }]
 
-    #optimizer = torch.optim.SGD(params, 0.1, momentum=args.momentum, weight_decay=args.weight_decay)
+    optimizer = torch.optim.SGD(params, lr=args.lr, momentum=args.momentum)
 
     #optimizer = optim.Adam(params, lr=args.lr, weight_decay=args.weight_decay)
-    optimizer = optim.Adam(params, lr=args.lr)
+    #optimizer = optim.Adam(params, lr=args.lr)
+
 
     criterion = nn.CrossEntropyLoss()
     if args.cuda:
@@ -360,7 +377,7 @@ if __name__ == '__main__':
 
     if args.evaluate:
         if model_ori is None:
-            test(model_test, evaluate=True)
+            test(model_test,evaluate=True)
         else:
             test(model_ori, evaluate=True)
         exit()
@@ -370,14 +387,8 @@ if __name__ == '__main__':
         if model_ori is None:
             train_bin(epoch)
             test(model_test)
-            test_train(model_train)
-            if cnt > 5:
-               cnt = 0
-               lr_cnt += 1
+
         else:
             train(epoch)
             test(model_ori)
-            if cnt > 5:
-               cnt = 0
-               lr_cnt += 1
 
