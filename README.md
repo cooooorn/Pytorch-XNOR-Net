@@ -1,6 +1,10 @@
 # Pytorch-XNOR-Net
 
-
+# Build
+~~~shell
+cd <Repository Root>/csrc/binop
+make
+~~~
 # MNIST
 
 ## Usage
